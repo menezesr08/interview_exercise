@@ -29,6 +29,7 @@ export class MessageData {
     chatMessage.conversationId = data.conversationId;
     chatMessage.created = new Date();
     chatMessage.deleted = false;
+    chatMessage.tags = data.tags;
 
     createRichContent(data, chatMessage);
 
@@ -41,7 +42,6 @@ export class MessageData {
     if (!message) throw new Error('Message not found');
     return chatMessageToObject(message);
   }
-
 
   async getChatConversationMessages(
     data: GetMessageDto,
@@ -98,8 +98,9 @@ export class MessageData {
         returnOriginal: false,
       },
     );
-    if (!updatedChatMessage) throw new Error('The message to be deleted does not exist');
-    return chatMessageToObject(updatedChatMessage) // Minimum to pass ts checks -replace this
+    if (!updatedChatMessage)
+      throw new Error('The message to be deleted does not exist');
+    return chatMessageToObject(updatedChatMessage); // Minimum to pass ts checks -replace this
   }
 
   async resolve(messageId: ObjectID): Promise<ChatMessage> {
@@ -164,6 +165,77 @@ export class MessageData {
     );
     if (!unlike) throw new Error('The message to unlike does not exist');
     return chatMessageToObject(unlike);
+  }
+
+  async addTag(
+    messageId: ObjectID,
+    userId: ObjectID,
+    tag: string,
+  ): Promise<ChatMessage> {
+    const filterBy = { _id: messageId };
+    const updateDocument = { $addToSet: { tags: tag } };
+
+    const updatedResult = await this.chatMessageModel.bulkWrite([
+      {
+        updateOne: {
+          filter: filterBy,
+          update: updateDocument,
+        },
+      },
+    ]);
+
+    if (!updatedResult || updatedResult.matchedCount === 0) {
+      throw new Error(
+        `Failed to add tag, messageId: ${messageId.toHexString()}, tag: ${tag}, userId: ${userId.toHexString()}`,
+      );
+    }
+
+    return this.getMessage(messageId.toHexString());
+  }
+
+  async updateTag(
+    messageId: ObjectID,
+    userId: ObjectID,
+    oldTag: string,
+    newTag: string,
+  ): Promise<ChatMessage> {
+    const filterBy = { _id: messageId, tags: oldTag };
+    const updateDocument = { $set: { 'tags.$': newTag } };
+
+    const updatedResult = await this.chatMessageModel.bulkWrite([
+      {
+        updateOne: {
+          filter: filterBy,
+          update: updateDocument,
+        },
+      },
+    ]);
+
+    if (!updatedResult || updatedResult.matchedCount === 0) {
+      throw new Error(
+        `Failed to update tag, messageId: ${messageId.toHexString()}, old tag: ${oldTag}, new tag: ${newTag} userId: ${userId.toHexString()}`,
+      );
+    }
+
+    return this.getMessage(messageId.toHexString());
+  }
+
+  async getMessagesByTag(
+    tag: string,
+    userId: ObjectID,
+  ): Promise<ChatMessage[]> {
+    const chatMessages1 = await this.chatMessageModel.find();
+
+    const chatMessages = await this.chatMessageModel.find({
+      tags: { $in: [tag] },
+    });
+
+    if (!chatMessages || chatMessages.length === 0) {
+      throw new Error(
+        `Failed to find list of messages with tag: ${tag} userId: ${userId.toHexString()}`,
+      );
+    }
+    return chatMessages.map((chatMessage) => chatMessageToObject(chatMessage));
   }
 
   async addReaction(

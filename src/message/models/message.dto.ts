@@ -5,6 +5,7 @@ import {
   ObjectType,
   registerEnumType,
 } from '@nestjs/graphql';
+import { ApiProperty } from '@nestjs/swagger';
 import { ObjectID } from 'mongodb';
 
 export enum GifType {
@@ -115,6 +116,9 @@ export class MessageDto {
 
   @Field()
   conversationId: ObjectID;
+
+  @Field(() => [String], { nullable: true })
+  tags?: String[];
 
   @Field(() => RichContentDto, { nullable: true })
   richContent?: RichContentDto;
