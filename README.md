@@ -82,9 +82,24 @@ While we don't expect everyone to complete this part of the exercise, it will fo
 
 We'd love to hear about
 * How you would go about implementing the solution
-* What problems you might encounter
+
+  I decided to opt for a simple solution of adding a list of tags to each message. Each tag is a string. This allows the sender to easily add a tag or update a tag.
+
+  Although we can add tags to each message, it would be difficult to update a specific tag across all messages. For example if all the messages have a specific tag like 'Urgent', then we would have to
+  go through each message, and update the 'Urgent' tag to the desired tag. This is a repetitive task.
 * How you would go about testing
+
+  My testing approach is similar to what already exists in the test files. I created dummy messages with tags and checked that the correct operations were being applied (ADD/UPDATE/FIND) by comparing the results
+  before and after each operation
 * What you might do differently
+  
+  I think having a centralized collection to store all the tags might be a better approach? Each tag would have unique Id. Something like this:
+
+  class Tag 
+    - id: String
+    - text: String
+ 
+  In this case, if we wanted to update a specific tag, we can do it here in the collection and all references to the tag would be consistent. Less repetitive and ensures more consistency when we update the tag
 
 # Additional
 The following docs are from the live service repo. You may find them helpful. 
